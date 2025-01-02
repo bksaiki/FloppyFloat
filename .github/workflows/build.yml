@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu:noble
+    runs-on: ubuntu-latest
     container: chciken/floppyfloat:latest
     steps:
     - uses: actions/checkout@v2
