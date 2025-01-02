@@ -1,6 +1,9 @@
 /*******************************************************************************
  * Apache License, Version 2.0
  * Copyright (c) 2024 chciken/Niko Zurstraßen
+ *
+ * These tests check FloppyFloat's soft float implementation against
+ * Berkeley SoftFloat. Includes test for ARM, RISC-Vm and x86.
  ******************************************************************************/
 
 #include <gtest/gtest.h>
@@ -277,6 +280,10 @@ TEST_MACRO_1(Sqrtf64, &SoftFloat::Sqrt<f64>, f64_sqrt, f64, 2, RoundTowardPositi
 TEST_MACRO_1(Sqrtf64, &SoftFloat::Sqrt<f64>, f64_sqrt, f64, 3, RoundTowardNegative)
 TEST_MACRO_1(Sqrtf64, &SoftFloat::Sqrt<f64>, f64_sqrt, f64, 4, RoundTowardZero)
 
+// Berkeley SoftFloat raises an invalid exception for fma(0,infinity,qNaN).
+// That does not comply with Intel's x86 ISA definition.
+// Hence, skip these tests.
+#if !defined(ARCH_X86)
 TEST_MACRO_3(Fmaf16, &SoftFloat::Fma<f16>, f16_mulAdd, f16, 0, RoundTiesToEven)
 TEST_MACRO_3(Fmaf16, &SoftFloat::Fma<f16>, f16_mulAdd, f16, 1, RoundTiesToAway)
 TEST_MACRO_3(Fmaf16, &SoftFloat::Fma<f16>, f16_mulAdd, f16, 2, RoundTowardPositive)
@@ -292,6 +299,7 @@ TEST_MACRO_3(Fmaf64, &SoftFloat::Fma<f64>, f64_mulAdd, f64, 1, RoundTiesToAway)
 TEST_MACRO_3(Fmaf64, &SoftFloat::Fma<f64>, f64_mulAdd, f64, 2, RoundTowardPositive)
 TEST_MACRO_3(Fmaf64, &SoftFloat::Fma<f64>, f64_mulAdd, f64, 3, RoundTowardNegative)
 TEST_MACRO_3(Fmaf64, &SoftFloat::Fma<f64>, f64_mulAdd, f64, 4, RoundTowardZero)
+#endif
 
 // TEST_MACRO_1(F16ToF32, static_cast<f32 (SoftFloat::*)(f16)>(&SoftFloat::F16ToF32), f16_to_f32, f16, 0, )
 // TEST_MACRO_1(F16ToF64, static_cast<f64 (SoftFloat::*)(f16)>(&SoftFloat::F16ToF64), f16_to_f64, f16, 0, )
