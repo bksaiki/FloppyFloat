@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: chciken/floppyfloat:latest
+    container: chciken/floppyfloatci:latest
     steps:
     - uses: actions/checkout@v2
       with:
