@@ -1,8 +1,12 @@
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/d54b8b2feb6948c2adf0247a0e448c5c)](https://app.codacy.com/gh/not-chciken/FloppyFloat/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/d54b8b2feb6948c2adf0247a0e448c5c)](https://app.codacy.com/gh/not-chciken/FloppyFloat/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+
 # FloppyFloat
 
 A floating point library for instruction set simulators.
 
 ## What Can It Be Used For?
+
 FloppyFloat is primarily designed as a faster alternative to soft float libraries in simulator environments.
 Soft float libraries, such as [Berkeley SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) or [SoftFP](https://bellard.org/softfp/),
 compute floating point instructions purely by integer arithmetic, which is a slow and painful process.
@@ -19,6 +23,7 @@ It should work on several host systems (the system that is executing the simulat
 FloppyFloat also does not rely on global state/variables, which allows it to easily model heterogeneous systems.
 
 ## How Much Faster Is It?
+
 That pretty much depends on the used hardware, the executed instructions and rounding modes, and status of the exception flags.
 Assuming a likely scenario with RoundTiesToEven, you should get the following results on an AMD Threadripper 3990X:
 
@@ -32,6 +37,7 @@ xychart-beta horizontal
 In general, heavy arithmetic instructions (e.g., Sqrtf64) see greater speedups than lightweight comparison or conversion instructions (e.g., F64ToU32).
 
 ## Features
+
 The following table shows FloppyFloat functions and their corresponding ISA instructions.
 
 | FloatFunction        | RISC-V    | x86 SSE     | ARM64  |
@@ -107,14 +113,15 @@ The following table shows FloppyFloat functions and their corresponding ISA inst
 | U64ToF64             | FCVT.D.LU | -           | UCVTF  |
 | Class\<f64\>         | FCLASS.D  | (6)         | -      |
 
-(1): Compiled code for x86 SSE resorts to CVTSS2SI for F32ToUxx.<br>
-(2): x86 SSE uses UCOMISS to achieve a the same functionality.<br>
-(3): ARM64 uses comparison functions (e.g., FCMP or FCMPE) which set bits in the PSTATE register.<br>
-(4): ARM64 provides FMAXNM/FMINNM and FMAX/FMIN.<br>
-(5): Compiled code for x86 SSE resorts to CVTSD2SI for F64ToUxx.<br>
-(6): Only available in x86 AVX512 as VFPCLASSxx.<br>
+(1): Compiled code for x86 SSE resorts to CVTSS2SI for F32ToUxx.\
+(2): x86 SSE uses UCOMISS to achieve a the same functionality.\
+(3): ARM64 uses comparison functions (e.g., FCMP or FCMPE) which set bits in the PSTATE register.\
+(4): ARM64 provides FMAXNM/FMINNM and FMAX/FMIN.\
+(5): Compiled code for x86 SSE resorts to CVTSD2SI for F64ToUxx.\
+(6): Only available in x86 AVX512 as VFPCLASSxx.\
 
 ## Build
+
 FloppyFloat follows a vanilla CMake build process:
 ```bash
 mkdir build
@@ -129,6 +136,7 @@ Besides GoogleTest for testing, there are no third-party dependencies.
 You only need a fairly recent compiler that supports at least C++23 and 128-bit datatypes.
 
 ## Usage
+
 The following code highlights the usage of FloppyFloat using a predefined RISC-V setup.
 Note that you can either use a dynamic rounding mode or a static rounding mode when executing the functions.
 If you are using a dynamic rounding, the usage of the `FLOPPY_FLOAT_FUNC` macro is highly recommended if performance is of great concern.
@@ -171,13 +179,16 @@ ff.tininess_before_rounding = true;
 ```
 
 ## Things You Need To Take Care Of
+
 If you are integrating FloppyFloat into a simulator, there are still some FP related things you need to take care of.
 For RISC.V, this primarily concerns NaN boxing.
 
 ## How Does It Work?
+
 Coding, algorithms, and a bit of math.
 For a detailed explanation see [this blog post](https://www.chciken.com/simulation/2023/11/12/fast-floating-point-simulation.html).
 
 ## Issues
+
 - ARM's FPCR.DN = 0 needs to be implemented.
 - On x86 Windows systems without FMA extension, MSVC uses a broken `std::fma`, which also affects the results of FloppyFloat.
