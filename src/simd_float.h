@@ -8,12 +8,33 @@
 #include "utils.h"
 
 class SimdFloat : public FloppyFloat {
-  using f32 = FfUtils::f32;
-
  public:
-  SimdFloat() {};
+  SimdFloat();
 
-  void Vadd(f32* pa, f32* pb, f32* dest, size_t len);
-  void VSub(f32* pa, f32* pb, f32* dest, size_t len);
-  void VMul(f32* pa, f32* pb, f32* dest, size_t len);
+  template <typename FT>
+  void SetQnan(typename FfUtils::FloatToUint<FT>::type val);
+
+  template <typename FT>
+  void VAdd(FT* pa, FT* pb, FT* dest, size_t len);
+
+  template <typename FT>
+  void VSub(FT* pa, FT* pb, FT* dest, size_t len);
+
+  template <typename FT>
+  void VMul(FT* pa, FT* pb, FT* dest, size_t len);
+
+  template <typename FT>
+  void VDiv(FT* pa, FT* pb, FT* dest, size_t len);
+
+  template <typename FT>
+  void VSqrt(FT* pa, FT* dest, size_t len);
+
+  template <typename FT>
+  void VFma(FT* pa, FT* pb, FT* pc, FT* dest, size_t len);
+
+  void SetupToRiscv();
+
+private:
+  void SetupToArm();  // Currently not implemented/working.
+  void SetupToX86();  // Currently not implemented/working.
 };
