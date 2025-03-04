@@ -3,7 +3,7 @@
 # Copyright (c) 2024 chciken/Niko Zurstraßen
 ######################################################
 
-add_custom_target(tests)
+add_custom_target(ff_tests)
 
 add_executable(test_utils test_utils.cpp)
 add_executable(test_softfloat_floppyfloat_arm_default_nan test_softfloat_floppyfloat.cpp)
@@ -19,7 +19,7 @@ set(TEST_COMPILE_OPTS --coverage -g -O3)
 set(TEST_LIB_PATHS -L${CMAKE_SOURCE_DIR}/tests/berkeley-softfloat-3/build/)
 
 macro(create_test_case test_name additional_libs additional_opts)
-  add_dependencies(tests ${test_name})
+  add_dependencies(ff_tests ${test_name})
   add_dependencies(${test_name} floppy_float_static_test)
   add_dependencies(${test_name} berkeley_softfloat)
   target_include_directories(${test_name} PUBLIC ${TEST_INCLUDE_PATHS})
@@ -40,7 +40,7 @@ create_test_case(test_softfloat_softfloat_x86 "-lsoftfloat-x86-sse" "-DARCH_X86"
 
 # Performance Comparison
 add_executable(test_performance test_performance.cpp)
-add_dependencies(tests test_performance)
+add_dependencies(ff_tests test_performance)
 add_dependencies(test_performance floppy_float_static)
 target_include_directories(test_performance PUBLIC ${TEST_INCLUDE_PATHS})
 target_link_libraries(test_performance ${CMAKE_BINARY_DIR}/libFloppyFloat.a -L${CMAKE_SOURCE_DIR}/tests/berkeley-softfloat-3/build/ -lsoftfloat-riscv)
