@@ -41,9 +41,9 @@ add_subdirectory(tests)
 add_custom_target(berkeley_softfloat)
 
 set (BERKELEY_SOFTFLOAT_PATH ${CMAKE_SOURCE_DIR}/tests/berkeley-softfloat-3/)
-add_dependencies(berkeley_softfloat berkeley_softfloat_x86_sse)
-add_dependencies(berkeley_softfloat berkeley_softfloat_riscv)
-add_dependencies(berkeley_softfloat berkeley_softfloat_arm_default_nan)
+add_dependencies(berkeley_softfloat_x86_sse berkeley_softfloat)
+add_dependencies(berkeley_softfloat_riscv berkeley_softfloat)
+add_dependencies(berkeley_softfloat_arm_default_nan berkeley_softfloat)
 
 add_custom_command(TARGET berkeley_softfloat POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy ${BERKELEY_SOFTFLOAT_PATH}/build/Linux-x86_64-GCC/ ${BERKELEY_SOFTFLOAT_PATH}/build/x86_sse
