@@ -45,11 +45,9 @@ add_dependencies(berkeley_softfloat berkeley_softfloat_x86_sse)
 add_dependencies(berkeley_softfloat berkeley_softfloat_riscv)
 add_dependencies(berkeley_softfloat berkeley_softfloat_arm_default_nan)
 
-add_custom_command(TARGET berkeley_softfloat POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${BERKELEY_SOFTFLOAT_PATH}/build/Linux-x86_64-GCC/ ${BERKELEY_SOFTFLOAT_PATH}/build/x86_sse
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${BERKELEY_SOFTFLOAT_PATH}/build/Linux-x86_64-GCC/ ${BERKELEY_SOFTFLOAT_PATH}/build/riscv
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${BERKELEY_SOFTFLOAT_PATH}/build/Linux-ARM-VFPv2-GCC/ ${BERKELEY_SOFTFLOAT_PATH}/build/arm_default_nan
-)
+file(COPY ${BERKELEY_SOFTFLOAT_PATH}/build/Linux-x86_64-GCC/ DESTINATION ${BERKELEY_SOFTFLOAT_PATH}/build/x86_sse)
+file(COPY ${BERKELEY_SOFTFLOAT_PATH}/build/Linux-x86_64-GCC/ DESTINATION ${BERKELEY_SOFTFLOAT_PATH}/build/riscv)
+file(COPY ${BERKELEY_SOFTFLOAT_PATH}/build/Linux-ARM-VFPv2-GCC/ DESTINATION ${BERKELEY_SOFTFLOAT_PATH}/build/arm_default_nan)
 
 add_custom_target(
    berkeley_softfloat_x86_sse
