@@ -40,7 +40,7 @@ add_subdirectory(tests)
 
 add_custom_target(berkeley_softfloat)
 
-set (BERKELEY_SOFTFLOAT_PATH ${CMAKE_SOURCE_DIR}/tests/berkeley-softfloat-3/)
+set (BERKELEY_SOFTFLOAT_PATH ${CMAKE_CURRENT_LIST_DIR}/tests/berkeley-softfloat-3/)
 add_dependencies(berkeley_softfloat berkeley_softfloat_x86_sse)
 add_dependencies(berkeley_softfloat berkeley_softfloat_riscv)
 add_dependencies(berkeley_softfloat berkeley_softfloat_arm_default_nan)
@@ -53,19 +53,19 @@ add_custom_target(
    berkeley_softfloat_x86_sse
    COMMAND SPECIALIZE_TYPE=8086-SSE make -j`nproc`
    COMMAND cp softfloat.a ../libsoftfloat-x86-sse.a
-   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tests/berkeley-softfloat-3/build/x86_sse
+   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/tests/berkeley-softfloat-3/build/x86_sse
 )
 
 add_custom_target(
    berkeley_softfloat_riscv
    COMMAND SPECIALIZE_TYPE=RISCV make -j`nproc`
    COMMAND cp softfloat.a ../libsoftfloat-riscv.a
-   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tests/berkeley-softfloat-3/build/riscv
+   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/tests/berkeley-softfloat-3/build/riscv
 )
 
 add_custom_target(
    berkeley_softfloat_arm_default_nan
    COMMAND SPECIALIZE_TYPE=ARM-VFPv2-defaultNaN make -j`nproc`
    COMMAND cp softfloat.a ../libsoftfloat-arm-default-nan.a
-   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tests/berkeley-softfloat-3/build/arm_default_nan
+   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/tests/berkeley-softfloat-3/build/arm_default_nan
 )
