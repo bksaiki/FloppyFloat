@@ -1095,7 +1095,7 @@ FT FloppyFloat::MinimumNumber(FT a, FT b) {
   if (IsZero(a) && IsZero(b))
     return std::signbit(a) && std::signbit(b) ? (FT)-0.0f : (FT) + 0.0f;
 
-  return (a > b) ? a : b;
+  return (a < b) ? a : b;
 }
 
 template f16 FloppyFloat::MinimumNumber<f16>(f16 a, f16 b);
