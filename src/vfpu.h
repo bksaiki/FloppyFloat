@@ -16,11 +16,24 @@ class Vfpu {
   // See IEEE 754-2019: 4.3 Rounding-direction attributes
   enum RoundingMode {
     kRoundTiesToEven,
-    kRoundTiesToAway,
-    kRoundTowardPositive,
+    kRoundTowardZero,
     kRoundTowardNegative,
-    kRoundTowardZero
+    kRoundTowardPositive,
+    kRoundTiesToAway
   } rounding_mode;
+
+  enum ClassIndex {
+    kNegInfinity = 0,
+    kNegNormal = 1,
+    kNegSubnormal = 2,
+    kNegZero = 3,
+    kPosZero = 4,
+    kPosSubnormal = 5,
+    kPosNormal = 6,
+    kPosInfinity = 7,
+    kSNan = 8,
+    kQNan = 9
+  };
 
   // Floating Exception Flags.
   bool invalid;

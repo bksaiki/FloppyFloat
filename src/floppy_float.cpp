@@ -717,7 +717,7 @@ FT FloppyFloat::Div(FT a, FT b) {
     if (!IsZero(r)) {
       inexact = true;
       c = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, c);
-      if (!underflow &&  MayResultFromUnderflow(c)) [[unlikely]] {
+      if (!underflow && MayResultFromUnderflow(c)) [[unlikely]] {
         if (IsTiny(c)) [[likely]] {
           if (!IsZero(r))
             underflow = true;
@@ -2070,22 +2070,31 @@ f64 FloppyFloat::U32ToF64(u32 a) {
 
 template <typename FT>
 u32 FloppyFloat::Class(FT a) {
-  bool sign = std::signbit(a);
-  bool is_inf = IsInf(a);
-  bool is_tiny = IsTiny(a);
-  bool is_zero = IsZero(a);
-  bool is_subn = IsSubnormal(a);
+  u32 res;
 
-  return (sign && is_inf) << 0                  // Negative infinity
-         | (sign && !is_inf && !is_tiny) << 1   // Negative normal
-         | (sign && is_subn) << 2               // Negative subnormal
-         | (sign && is_zero) << 3               // -0.
-         | (!sign && is_zero) << 4              // +0
-         | (!sign && is_subn) << 5              // Positive subnormal
-         | (!sign && !is_inf && !is_tiny) << 6  // Positive normal
-         | (!sign && is_inf) << 7               // Positive infinity
-         | (IsSnan(a)) << 8                     // Signaling NaN
-         | (IsNan(a) && !IsSnan(a)) << 9;       // Quiet NaN
+  if (std::signbit(a)) {
+    if (IsTiny(a)) {
+      res = IsZero(a) ? ClassIndex::kNegZero : ClassIndex::kNegSubnormal;
+    } else {
+      if (IsNan(a)) {
+        res = IsQnan(a) ? ClassIndex::kQNan : ClassIndex::kSNan;
+      } else {
+        res = ((a - a) == 0) ? ClassIndex::kNegNormal : ClassIndex::kNegInfinity;
+      }
+    }
+  } else {
+    if (IsTiny(a)) {
+      res = IsZero(a) ? ClassIndex::kPosZero : ClassIndex::kPosSubnormal;
+    } else {
+      if (IsNan(a)) {
+        res = IsQnan(a) ? ClassIndex::kQNan : ClassIndex::kSNan;
+      } else {
+        res = ((a - a) == 0) ? ClassIndex::kPosNormal : ClassIndex::kPosInfinity;
+      }
+    }
+  }
+
+  return 1 << res;
 }
 
 template u32 FloppyFloat::Class<f16>(f16 a);
