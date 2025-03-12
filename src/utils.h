@@ -464,15 +464,15 @@ constexpr bool MayResultFromUnderflow(FT a) {
 }
 
 template <typename FT>
-constexpr bool IsSubnormal(FT a) {
-  static_assert(std::is_floating_point_v<FT>);
-  return (std::abs(a) < nl<FT>::min()) && !IsZero(a);
-}
-
-template <typename FT>
 constexpr bool IsZero(FT a) {
   static_assert(std::is_floating_point_v<FT>);
   return (a == -a);
+}
+
+template <typename FT>
+constexpr bool IsSubnormal(FT a) {
+  static_assert(std::is_floating_point_v<FT>);
+  return (std::abs(a) < nl<FT>::min()) && !IsZero(a);
 }
 
 template <typename FT>

@@ -2087,3 +2087,7 @@ u32 FloppyFloat::Class(FT a) {
          | (IsSnan(a)) << 8                     // Signaling NaN
          | (IsNan(a) && !IsSnan(a)) << 9;       // Quiet NaN
 }
+
+template u32 FloppyFloat::Class<f16>(f16 a);
+template u32 FloppyFloat::Class<f32>(f32 a);
+template u32 FloppyFloat::Class<f64>(f64 a);
