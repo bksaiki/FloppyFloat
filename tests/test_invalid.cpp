@@ -27,6 +27,7 @@ TEST(InvalidTests, RoundingMode) {
   ASSERT_THROW(fpu.Sub<f32>(a, b), std::runtime_error);
   ASSERT_THROW(fpu.Mul<f32>(a, b), std::runtime_error);
   ASSERT_THROW(fpu.Div<f32>(a, b), std::runtime_error);
+  ASSERT_THROW(fpu.Sqrt<f32>(a), std::runtime_error);
   ASSERT_THROW(fpu.Fma<f32>(a, b, c), std::runtime_error);
   ASSERT_NO_THROW(fpu.EqQuiet<f32>(a, b));
   ASSERT_NO_THROW(fpu.LeQuiet<f32>(a, b));
@@ -51,6 +52,7 @@ TEST(InvalidTests, RoundingMode) {
   ASSERT_THROW(fpu.F64ToU64(a), std::runtime_error);
   ASSERT_THROW(fpu.F64ToF16(a), std::runtime_error);
   ASSERT_THROW(fpu.F64ToF32(a), std::runtime_error);
+  ASSERT_THROW(fpu.I32ToF16(d), std::runtime_error);
   ASSERT_THROW(fpu.I32ToF32(d), std::runtime_error);
   ASSERT_NO_THROW(fpu.I32ToF64(d));
   ASSERT_THROW(fpu.U32ToF32(d), std::runtime_error);
@@ -59,6 +61,17 @@ TEST(InvalidTests, RoundingMode) {
   // ASSERT_THROW(fpu.I64ToF64(d), std::runtime_error); // TODO
   ASSERT_THROW(fpu.U64ToF32(d), std::runtime_error);
   // ASSERT_THROW(fpu.U64ToF64(d), std::runtime_error); // TODO
+}
+
+TEST(InvalidTests, NanPropagation) {
+  FloppyFloat fpu;
+  fpu.SetupToRiscv();
+  fpu.nan_propagation_scheme = (Vfpu::NanPropagationSchemes)-1;
+  const f32 qnanff = CreateQnanWithPayload<f32>(0xff);
+
+  ASSERT_THROW(fpu.Sqrt<f32>(qnanff), std::runtime_error);
+  ASSERT_THROW(fpu.Add<f32>(qnanff, qnanff), std::runtime_error);
+  ASSERT_THROW(fpu.Fma<f32>(qnanff, qnanff, qnanff), std::runtime_error);
 }
 
 int main(int argc, char* argv[]) {

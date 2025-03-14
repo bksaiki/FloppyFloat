@@ -195,6 +195,16 @@ void DoTest(FFFUNC ff_func, SFFUNC sf_func) {
     CheckResult(ToComparableType(ff.ff_op((type)4294967294u)), ToComparableType(::sf_op((type)4294967294u)), 16);     \
     CheckResult(ToComparableType(ff.ff_op((type)4294967295u)), ToComparableType(::sf_op((type) 4294967295u)), 17);    \
     CheckResult(ToComparableType(ff.ff_op((type)4294967294u)), ToComparableType(::sf_op((type)4294967294u)), 18);     \
+    CheckResult(ToComparableType(ff.ff_op((type)0x10000080u)), ToComparableType(::sf_op((type)0x10000080u)), 19);     \
+    CheckResult(ToComparableType(ff.ff_op((type)0x10000180u)), ToComparableType(::sf_op((type)0x10000180u)), 20);     \
+    CheckResult(ToComparableType(ff.ff_op((type)0x80000100u)), ToComparableType(::sf_op((type)0x80000100u)), 21);     \
+    CheckResult(ToComparableType(ff.ff_op((type)0x80000180u)), ToComparableType(::sf_op((type)0x80000180u)), 22);     \
+    CheckResult(ToComparableType(ff.ff_op((type)8193)), ToComparableType(::sf_op((type)8193)), 23);                   \
+    CheckResult(ToComparableType(ff.ff_op((type)-8193)), ToComparableType(::sf_op((type)-8193)), 24);                 \
+    CheckResult(ToComparableType(ff.ff_op((type)0x80100001u)), ToComparableType(::sf_op((type)0x80100001u)), 25);     \
+    CheckResult(ToComparableType(ff.ff_op((type)0x80100000u)), ToComparableType(::sf_op((type)0x80100000u)), 26);     \
+    CheckResult(ToComparableType(ff.ff_op((type)0x80180000u)), ToComparableType(::sf_op((type)0x80180000u)), 27);     \
+    CheckResult(ToComparableType(ff.ff_op((type)0x80180001u)), ToComparableType(::sf_op((type)0x80180001u)), 28);     \
   }
 
 TEST_MACRO_2(Addf16, &FloppyFloat::Add<f16>, f16_add, f16, 0, RoundTiesToEven)

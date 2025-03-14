@@ -1333,10 +1333,7 @@ u32 FloppyFloat::F32ToU32(f32 a) {
   if (!IsZero(r))
     inexact = true;
 
-  if constexpr (rm == kRoundTowardNegative) {
-    if (r > 0.f32)
-      ia -= 1;
-  } else if constexpr (rm == kRoundTowardPositive) {
+  if constexpr (rm == kRoundTowardPositive) {
     if (r < 0.f32)
       ia += 1;
   }
@@ -1865,7 +1862,7 @@ f16 FloppyFloat::I32ToF16(i32 a) {
     inexact = true;
     [[maybe_unused]] bool even;
     if constexpr (rm != kRoundTiesToEven)
-      even = shifted_ua & 0x100u;
+      even = shifted_ua & (1u << (32 - NumSignificandBits<f16>() -1 ));
     if constexpr (rm == kRoundTowardPositive) {
       if (a > 0) {
         if ((r < 1048576) || ((r == 1048576) && !even))
@@ -1928,7 +1925,7 @@ f32 FloppyFloat::I32ToF32(i32 a) {
 
 template <FloppyFloat::RoundingMode rm>
 f32 FloppyFloat::I32ToF32(i32 a) {
-  f32 af = static_cast<f32>(a);
+  f32 af = static_cast<f32>(a);  // RoundTiesToEven is C++ default.
   u32 ua = std::abs(a);
   u32 shifted_ua = ua << std::countl_zero(ua);
   u32 r = shifted_ua & 0xffu;
@@ -1938,7 +1935,7 @@ f32 FloppyFloat::I32ToF32(i32 a) {
     if constexpr (rm == kRoundTiesToEven) {
       return af;
     }
-    bool even = shifted_ua & 0x100u;
+    bool even = shifted_ua & (1u << (32 - NumSignificandBits<f32>() - 1));
     if constexpr (rm == kRoundTowardPositive) {
       if (a > 0) {
         if ((r < 128) || ((r == 128) && !even))
