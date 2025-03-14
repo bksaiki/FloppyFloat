@@ -100,7 +100,10 @@ class FloppyFloat : public SoftFloat {
 
   template <RoundingMode rm>
   FfUtils::f16 F64ToF16(FfUtils::f64 a);
+  FfUtils::f16 F64ToF16(FfUtils::f64 a);
+
   template <RoundingMode rm>
+  FfUtils::f32 F64ToF32(FfUtils::f64 a);
   FfUtils::f32 F64ToF32(FfUtils::f64 a);
 
   template <RoundingMode rm>
@@ -158,5 +161,5 @@ class FloppyFloat : public SoftFloat {
   template <typename FT, FloppyFloat::RoundingMode rm>
   constexpr auto UpFma(FT a, FT b, FT c, FT& d);
 
-  //constexpr FfUtils::f64 PropagateNan(FfUtils::f32 a);
+  // constexpr FfUtils::f64 PropagateNan(FfUtils::f32 a);
 };

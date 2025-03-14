@@ -248,6 +248,10 @@ class FloatRng {
     values_.push_back((FT)std::bit_cast<FfUtils::f64>(0x1ffffffffffffffeu));
     values_.push_back((FT)std::bit_cast<FfUtils::f64>(0x2000000000000001u));
     values_.push_back(-(FT)std::bit_cast<FfUtils::f64>(0x1ffffffffffffffeu));
+    values_.push_back((FT)4294967295.9999995);
+    values_.push_back((FT)4294967295.5);
+    values_.push_back((FT)4294967295.0000005);
+    values_.push_back((FT)4294967295.5000005);
   }
 
   FT Gen() {

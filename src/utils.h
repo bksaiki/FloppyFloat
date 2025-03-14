@@ -294,10 +294,32 @@ constexpr FT CreateQnanWithPayload(typename FloatToUint<FT>::type payload) {
   UT u;
   if constexpr (std::is_same_v<FT, f16>) {
     u = 0x7e00u;
+    assert(payload < 0x200u);
   } else if constexpr (std::is_same_v<FT, f32>) {
     u = 0x7fc00000u;
+    assert(payload < 0x400000u);
   } else if constexpr (std::is_same_v<FT, f64>) {
     u = 0x7ff8000000000000ull;
+    assert(payload < 0x8000000000000ull);
+  } else {
+    static_assert(false, "Type needs to be f16, f32, float, f64, or double");
+  }
+  return std::bit_cast<FT>((UT)(u | payload));
+}
+
+template <typename FT>
+constexpr FT CreateSnanWithPayload(typename FloatToUint<FT>::type payload) {
+  using UT = decltype(payload);
+  UT u;
+  if constexpr (std::is_same_v<FT, f16>) {
+    u = 0x7c00u;
+    assert(payload < 0x200u);
+  } else if constexpr (std::is_same_v<FT, f32>) {
+    u = 0x7f800000u;
+    assert(payload < 0x400000u);
+  } else if constexpr (std::is_same_v<FT, f64>) {
+    u = 0x7ff0000000000000ull;
+    assert(payload < 0x8000000000000ull);
   } else {
     static_assert(false, "Type needs to be f16, f32, float, f64, or double");
   }

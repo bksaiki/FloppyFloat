@@ -33,6 +33,8 @@ jobs:
             ./test_softfloat_softfloat_riscv
             ./test_softfloat_softfloat_x86
             ./test_utils
+            ./test_golden
+            ./test_invalid
     - name: coverage report
       run: |
            export CODACY_PROJECT_TOKEN=${{secrets.CODACY_TOKEN}}

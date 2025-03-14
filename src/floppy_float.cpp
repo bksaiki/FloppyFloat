@@ -1440,19 +1440,13 @@ f16 FloppyFloat::F32ToF16(f32 a) {
 
   f16 result = static_cast<f16>(a);
 
-  if (IsInfOrNan(result)) [[unlikely]] {
-    if (IsNan(result)) {
-      if (!GetQuietBit(a))
-        invalid = true;
-      return GetQnan<f16>();
-    } else {  // Infinity case.
-      if (!IsInf(a)) {
-        overflow = true;
-        inexact = true;
-        result = RoundInf<f16, rm>(result);
-      }
-      return result;
+  if (IsInfOrNan(result)) [[unlikely]] {  // Infinity case. NaN already handled before.
+    if (!IsInf(a)) {
+      overflow = true;
+      inexact = true;
+      result = RoundInf<f16, rm>(result);
     }
+    return result;
   }
 
   f32 residual = static_cast<f32>(result) - a;
@@ -1528,6 +1522,23 @@ i32 FloppyFloat::F64ToI32(f64 a) {
   }
 }
 
+f16 FloppyFloat::F64ToF16(f64 a) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return F64ToF16<kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return F64ToF16<kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return F64ToF16<kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return F64ToF16<kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return F64ToF16<kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
+
 template <FloppyFloat::RoundingMode rm>
 f16 FloppyFloat::F64ToF16(f64 a) {
   RmGuard(this, rm);
@@ -1539,6 +1550,23 @@ template f16 FloppyFloat::F64ToF16<FloppyFloat::kRoundTowardPositive>(f64 a);
 template f16 FloppyFloat::F64ToF16<FloppyFloat::kRoundTowardNegative>(f64 a);
 template f16 FloppyFloat::F64ToF16<FloppyFloat::kRoundTowardZero>(f64 a);
 template f16 FloppyFloat::F64ToF16<FloppyFloat::kRoundTiesToAway>(f64 a);
+
+f32 FloppyFloat::F64ToF32(f64 a) {
+  switch (rounding_mode) {
+  case kRoundTiesToEven:
+    return F64ToF32<kRoundTiesToEven>(a);
+  case kRoundTiesToAway:
+    return F64ToF32<kRoundTiesToAway>(a);
+  case kRoundTowardPositive:
+    return F64ToF32<kRoundTowardPositive>(a);
+  case kRoundTowardNegative:
+    return F64ToF32<kRoundTowardNegative>(a);
+  case kRoundTowardZero:
+    return F64ToF32<kRoundTowardZero>(a);
+  default:
+    throw std::runtime_error(std::string("Unknown rounding mode"));
+  }
+}
 
 template <FloppyFloat::RoundingMode rm>
 f32 FloppyFloat::F64ToF32(f64 a) {
@@ -1867,6 +1895,8 @@ f16 FloppyFloat::I32ToF16(i32 a) {
         af = NextUpNoNegZero(af);
       if ((a < 0) && (r == 1048576) && even)
         af = NextDownNoPosZero(af);
+    } else {
+      static_assert("Using unsupported rounding mode!");
     }
   }
 

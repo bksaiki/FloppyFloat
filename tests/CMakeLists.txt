@@ -1,10 +1,12 @@
 ######################################################
 # Apache License, Version 2.0
-# Copyright (c) 2024 chciken/Niko Zurstraßen
+# Copyright (c) 2025 chciken/Niko Zurstraßen
 ######################################################
 
 add_custom_target(ff_tests)
 
+add_executable(test_invalid test_invalid.cpp)
+add_executable(test_golden test_golden.cpp)
 add_executable(test_utils test_utils.cpp)
 add_executable(test_softfloat_floppyfloat_arm_default_nan test_softfloat_floppyfloat.cpp)
 add_executable(test_softfloat_floppyfloat_riscv test_softfloat_floppyfloat.cpp)
@@ -30,6 +32,8 @@ macro(create_test_case test_name additional_libs additional_opts)
   set_tests_properties(${test_name} PROPERTIES TIMEOUT 300)
 endmacro()
 
+create_test_case(test_invalid "" "")
+create_test_case(test_golden "" "")
 create_test_case(test_utils "" "")
 create_test_case(test_softfloat_floppyfloat_arm_default_nan "-lsoftfloat-arm-default-nan" "-DARCH_ARM")
 create_test_case(test_softfloat_floppyfloat_riscv "-lsoftfloat-riscv" "-DARCH_RISCV")
