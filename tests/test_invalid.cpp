@@ -72,6 +72,9 @@ TEST(InvalidTests, NanPropagation) {
   ASSERT_THROW(fpu.Sqrt<f32>(qnanff), std::runtime_error);
   ASSERT_THROW(fpu.Add<f32>(qnanff, qnanff), std::runtime_error);
   ASSERT_THROW(fpu.Fma<f32>(qnanff, qnanff, qnanff), std::runtime_error);
+  ASSERT_THROW(fpu.F16ToF32(qnanff), std::runtime_error);
+  ASSERT_THROW(fpu.F16ToF64(qnanff), std::runtime_error);
+  ASSERT_THROW(fpu.F32ToF64(qnanff), std::runtime_error);
 }
 
 int main(int argc, char* argv[]) {
