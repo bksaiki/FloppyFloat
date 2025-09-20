@@ -475,7 +475,7 @@ FT FloppyFloat::Sub(FT a, FT b) {
       if (!IsInf(a) && !IsInf(b)) {
         c = RoundInf<FT, rm>(c);
         if (IsOverflow<FT, rm>(a, -b, c))
-          SetOverfow();
+          SetOverflow();
         SetInexact();
       }
       return c;
