@@ -368,7 +368,7 @@ FT FloppyFloat::Add(FT a, FT b) {
     if (IsInf(c)) {
       if (!IsInf(a) && !IsInf(b)) {
         c = RoundInf<FT, rm>(c);
-        if (IsOverflow<FT, rm>(a, b, c);)
+        if (IsOverflow<FT, rm>(a, b, c))
           SetOverflow();
         SetInexact();
       }
@@ -410,11 +410,11 @@ FT FloppyFloat::Add(FT a, FT b) {
           if (r < 0. && c > 0.) {
             c = NextUpNoNegZero(c);
             if (IsInf(c))
-              SetOverflow()
+              SetOverflow();
           } else if (r > 0. && c < 0.) {
             c = NextDownNoPosZero(c);
             if (IsInf(c))
-              SetOverflow()
+              SetOverflow();
           }
         }
       } else {
