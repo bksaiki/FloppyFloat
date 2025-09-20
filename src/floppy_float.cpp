@@ -197,20 +197,24 @@ constexpr FT FloppyFloat::RoundResult([[maybe_unused]] TFT residual, FT result) 
   } else if constexpr (rm == kRoundTowardPositive) {
     if (residual < static_cast<FT>(0.f)) {
       result = NextUpNoNegZero(result);
-      overflow = IsPosInf(result) ? true : overflow;
+      if (IsPosInf(result))
+        SetOverflow();
     }
   } else if constexpr (rm == kRoundTowardNegative) {
     if (residual > static_cast<FT>(0.f)) {
       result = NextDownNoPosZero(result);
-      overflow = IsNegInf(result) ? true : overflow;
+      if (IsNegInf(result))
+        SetOverflow();
     }
   } else if constexpr (rm == kRoundTowardZero) {
     if (residual < static_cast<FT>(0.f) && result < static_cast<FT>(0.f)) {  // Fix a round-down.
       result = NextUpNoNegZero(result);
-      overflow = IsPosInf(result) ? true : overflow;
+      if (IsPosInf(result))
+        SetOverflow();
     } else if (residual > static_cast<FT>(0.f) && result > static_cast<FT>(0.f)) {  // Fix a round-up.
       result = NextDownNoPosZero(result);
-      overflow = IsNegInf(result) ? true : overflow;
+      if (IsNegInf(result))
+        SetOverflow();
     }
   } else {
     assert(false && "Using unsupported rounding mode");
@@ -364,17 +368,18 @@ FT FloppyFloat::Add(FT a, FT b) {
     if (IsInf(c)) {
       if (!IsInf(a) && !IsInf(b)) {
         c = RoundInf<FT, rm>(c);
-        overflow = IsOverflow<FT, rm>(a, b, c);
-        inexact = true;
+        if (IsOverflow<FT, rm>(a, b, c);)
+          SetOverflow();
+        SetInexact();
       }
       return c;
     }
     if (IsInf(a) && IsInf(b)) {
-      invalid = true;
+      SetInvalid();
       return GetQnan<FT>();
     }
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     if (IsNan(a) || IsNan(b))
       return PropagateNan<FT>(a, b);
   }
@@ -391,12 +396,12 @@ FT FloppyFloat::Add(FT a, FT b) {
     if (!inexact) [[unlikely]] {
       FT r = FastTwoSum<FT>(a, b, c);
       if (!IsZero(r))
-        inexact = true;
+        SetInexact();
     }
   } else {
     FT r = FastTwoSum<FT>(a, b, c);
     if (!IsZero(r)) {
-      inexact = true;
+      SetInexact();
       if constexpr (rm == kRoundTiesToAway) {
         FT cc = ClearSignificand<FT>(c);
         FT r_scaled = GetRScaled<FT>(r);
@@ -404,10 +409,12 @@ FT FloppyFloat::Add(FT a, FT b) {
         if (-cc == r_scaled) [[unlikely]] {
           if (r < 0. && c > 0.) {
             c = NextUpNoNegZero(c);
-            overflow = IsInf(c) ? true : overflow;
+            if (IsInf(c))
+              SetOverflow()
           } else if (r > 0. && c < 0.) {
             c = NextDownNoPosZero(c);
-            overflow = IsInf(c) ? true : overflow;
+            if (IsInf(c))
+              SetOverflow()
           }
         }
       } else {
@@ -467,17 +474,18 @@ FT FloppyFloat::Sub(FT a, FT b) {
     if (IsInf(c)) {
       if (!IsInf(a) && !IsInf(b)) {
         c = RoundInf<FT, rm>(c);
-        overflow = IsOverflow<FT, rm>(a, -b, c);
-        inexact = true;
+        if (IsOverflow<FT, rm>(a, -b, c))
+          SetOverfow();
+        SetInexact();
       }
       return c;
     }
     if (IsInf(a) && IsInf(b)) {
-      invalid = true;
+      SetInvalid();
       return GetQnan<FT>();
     }
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     if (IsNan(a) || IsNan(b))
       return PropagateNan<FT>(a, b);
   }
@@ -494,12 +502,12 @@ FT FloppyFloat::Sub(FT a, FT b) {
     if (!inexact) [[unlikely]] {
       FT r = FastTwoSum<FT>(a, -b, c);
       if (!IsZero(r))
-        inexact = true;
+        SetInexact();
     }
   } else {
     FT r = FastTwoSum(a, -b, c);
     if (!IsZero(r)) {
-      inexact = true;
+      SetInexact();
       if constexpr (rm == kRoundTiesToAway) {
         FT cc = ClearSignificand<FT>(c);
         FT r_scaled = GetRScaled<FT>(r);
@@ -507,10 +515,12 @@ FT FloppyFloat::Sub(FT a, FT b) {
         if (-cc == r_scaled) [[unlikely]] {
           if (r < 0. && c > 0.) {
             c = NextUpNoNegZero(c);
-            overflow = IsInf(c) ? true : overflow;
+            if (IsInf(c))
+              SetOverflow();
           } else if (r > 0. && c < 0.) {
             c = NextDownNoPosZero(c);
-            overflow = IsInf(c) ? true : overflow;
+            if (IsInf(c))
+              SetOverflow();
           }
         }
       } else {
@@ -575,8 +585,8 @@ FT FloppyFloat::Mul(FT a, FT b) {
     if (IsInf(c)) {
       if (!IsInf(a) && !IsInf(b)) {
         if constexpr (rm == FloppyFloat::kRoundTiesToEven) {
-          overflow = true;
-          inexact = true;
+          SetOverflow();
+          SetInexact();
         } else {
           RmGuard rg(this, rm);
           c = SoftFloat::Mul<FT>(a, b);
@@ -585,10 +595,10 @@ FT FloppyFloat::Mul(FT a, FT b) {
       return c;
     }
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     if (IsNan(a) || IsNan(b))
       return PropagateNan<FT>(a, b);
-    invalid = true;
+    SetInvalid();
     return GetQnan<FT>();
   }
 
@@ -596,7 +606,7 @@ FT FloppyFloat::Mul(FT a, FT b) {
     if (!inexact) [[unlikely]] {
       auto r = UpMul<FT, rm>(a, b, c);
       if (!IsZero(r))
-        inexact = true;
+        SetInexact();
     }
     if (!underflow) {
       if (MayResultFromUnderflow(c)) [[unlikely]] {
@@ -607,12 +617,12 @@ FT FloppyFloat::Mul(FT a, FT b) {
   } else {
     auto r = UpMul<FT, rm>(a, b, c);
     if (!IsZero(r)) {
-      inexact = true;
+      SetInexact();
       c = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, c);
       if (!underflow && MayResultFromUnderflow(c)) [[unlikely]] {
         if (IsTiny(c)) [[likely]] {
           if (!IsZero(r))
-            underflow = true;
+            SetUnderflow();
         } else {
           RmGuard rg(this, rm);
           c = SoftFloat::Mul<FT>(a, b);
@@ -675,13 +685,13 @@ FT FloppyFloat::Div(FT a, FT b) {
   if (IsInfOrNan(c)) [[unlikely]] {
     if (IsInf(c)) {
       if (!IsInf(a) && IsZero(b)) {
-        division_by_zero = true;
+        SetDivisionByZero();
         return c;
       }
       if (!IsInf(a) && !(IsInf(b))) {
         if constexpr (rm == FloppyFloat::kRoundTiesToEven) {
-          overflow = true;
-          inexact = true;
+          SetOverflow();
+          SetInexact();
         } else {
           RmGuard rg(this, rm);
           c = SoftFloat::Div<FT>(a, b);
@@ -690,10 +700,10 @@ FT FloppyFloat::Div(FT a, FT b) {
       return c;
     }
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     if (IsNan(a) || IsNan(b))
       return PropagateNan<FT>(a, b);
-    invalid = true;
+    SetInvalid();
     return GetQnan<FT>();
   }
 
@@ -704,7 +714,7 @@ FT FloppyFloat::Div(FT a, FT b) {
     if (!inexact) [[unlikely]] {
       auto r = UpDiv<FT, rm>(a, b, c);
       if (!IsZero(r))
-        inexact = true;
+        SetInexact();
     }
     if (!underflow) {
       if (MayResultFromUnderflow(c)) [[unlikely]] {
@@ -715,12 +725,12 @@ FT FloppyFloat::Div(FT a, FT b) {
   } else {
     auto r = UpDiv<FT, rm>(a, b, c);
     if (!IsZero(r)) {
-      inexact = true;
+      SetInexact();
       c = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, c);
       if (!underflow && MayResultFromUnderflow(c)) [[unlikely]] {
         if (IsTiny(c)) [[likely]] {
           if (!IsZero(r))
-            underflow = true;
+            SetUnderflow();
         } else {
           RmGuard rg(this, rm);
           c = SoftFloat::Div<FT>(a, b);
@@ -783,10 +793,10 @@ FT FloppyFloat::Sqrt(FT a) {
 
   if (IsNan(b)) [[unlikely]] {
     if (IsSnan(a))
-      invalid = true;
+      SetInvalid();
     if (IsNan(a))
       return PropagateNan<FT>(a, a);
-    invalid = true;
+    SetInvalid();
     return GetQnan<FT>();
   }
 
@@ -796,14 +806,14 @@ FT FloppyFloat::Sqrt(FT a) {
         return b;
       auto r = UpSqrt<FT, rm>(a, b);
       if (!IsZero(r))
-        inexact = true;
+        SetInexact();
     }
   } else {
     if (IsInf(a)) [[unlikely]]
       return b;
     auto r = UpSqrt<FT, rm>(a, b);
     if (!IsZero(r)) {
-      inexact = true;
+      SetInexact();
       b = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, b);
     }
   }
@@ -865,8 +875,8 @@ FT FloppyFloat::Fma(FT a, FT b, FT c) {
     if (IsInf(d)) {
       if (!IsInf(a) && !IsInf(b) && !IsInf(c)) {
         if constexpr (rm == FloppyFloat::kRoundTiesToEven) {
-          overflow = true;
-          inexact = true;
+          SetOverflow();
+          SetInexact();
         } else {
           RmGuard rg(this, rm);
           d = SoftFloat::Fma(a, b, c);
@@ -875,12 +885,13 @@ FT FloppyFloat::Fma(FT a, FT b, FT c) {
       return d;
     }
     if ((IsZero(a) && IsInf(b)) || (IsZero(b) && IsInf(a)))
-      invalid = invalid_fma ? true : invalid;
+      if (invalid_fma)
+        SetInvalid();
     if (IsSnan(a) || IsSnan(b) || IsSnan(c))
-      invalid = true;
+      SetInvalid();
     if (IsNan(a) || IsNan(b) || IsNan(c))
       return PropagateNan<FT>(a, b, c);
-    invalid = true;
+    SetInvalid();
     return GetQnan<FT>();
   }
 
@@ -895,7 +906,7 @@ FT FloppyFloat::Fma(FT a, FT b, FT c) {
     if (!inexact) [[unlikely]] {
       auto r = UpFma<FT, rm>(a, b, c, d);
       if (!IsZero(r))
-        inexact = true;
+        SetInexact();
     }
     if (!underflow) {
       if (MayResultFromUnderflow(d)) [[unlikely]] {
@@ -906,12 +917,12 @@ FT FloppyFloat::Fma(FT a, FT b, FT c) {
   } else {
     auto r = UpFma<FT, rm>(a, b, c, d);
     if (!IsZero(r)) {
-      inexact = true;
+      SetInexact();
       d = RoundResult<FT, typename TwiceWidthType<FT>::type, rm>(r, d);
       if (!underflow && MayResultFromUnderflow(d)) [[unlikely]] {
         if (IsTiny(d)) [[likely]] {
           if (!IsZero(r))
-            underflow = true;
+            SetUnderflow();
         } else {
           RmGuard rg(this, rm);
           d = SoftFloat::Fma<FT>(a, b, c);
@@ -945,7 +956,7 @@ template <typename FT>
 bool FloppyFloat::EqQuiet(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     return false;
   }
 
@@ -959,7 +970,7 @@ template bool FloppyFloat::EqQuiet<f64>(f64 a, f64 b);
 template <typename FT>
 bool FloppyFloat::EqSignaling(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return false;
   }
 
@@ -974,7 +985,7 @@ template <typename FT>
 bool FloppyFloat::LeQuiet(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     return false;
   }
 
@@ -988,7 +999,7 @@ template bool FloppyFloat::LeQuiet<f64>(f64 a, f64 b);
 template <typename FT>
 bool FloppyFloat::LeSignaling(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return false;
   }
 
@@ -1003,7 +1014,7 @@ template <typename FT>
 bool FloppyFloat::LtQuiet(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     return false;
   }
 
@@ -1017,7 +1028,7 @@ template bool FloppyFloat::LtQuiet<f64>(f64 a, f64 b);
 template <typename FT>
 bool FloppyFloat::LtSignaling(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return false;
   }
 
@@ -1031,7 +1042,7 @@ template bool FloppyFloat::LtSignaling<f64>(f64 a, f64 b);
 template <typename FT>
 FT FloppyFloat::Maxx86(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return b;
   }
 
@@ -1048,7 +1059,7 @@ template f64 FloppyFloat::Maxx86<f64>(f64 a, f64 b);
 template <typename FT>
 FT FloppyFloat::Minx86(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return b;
   }
 
@@ -1066,7 +1077,7 @@ template <typename FT>
 FT FloppyFloat::MaximumNumber(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     if (IsNan(a) && IsNan(b))
       return GetQnan<FT>();
     return IsNan(a) ? b : a;
@@ -1086,7 +1097,7 @@ template <typename FT>
 FT FloppyFloat::MinimumNumber(FT a, FT b) {
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     if (IsNan(a) && IsNan(b))
       return GetQnan<FT>();
     return IsNan(a) ? b : a;
@@ -1105,7 +1116,7 @@ template f64 FloppyFloat::MinimumNumber<f64>(f64 a, f64 b);
 f32 FloppyFloat::F16ToF32(f16 a) {
   if (IsNan(a)) [[unlikely]] {
     if (!GetQuietBit(a))
-      invalid = true;
+      SetInvalid();
     return PropagateNan<f16, f32>(a);
   }
 
@@ -1115,7 +1126,7 @@ f32 FloppyFloat::F16ToF32(f16 a) {
 f64 FloppyFloat::F16ToF64(f16 a) {
   if (IsNan(a)) [[unlikely]] {
     if (!GetQuietBit(a))
-      invalid = true;
+      SetInvalid();
     return PropagateNan<f16, f64>(a);
   }
 
@@ -1171,13 +1182,13 @@ i32 FloppyFloat::F32ToI32(f32 a) {
 template <FloppyFloat::RoundingMode rm>
 i32 FloppyFloat::F32ToI32(f32 a) {
   if (IsNan(a)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return nan_limit_i32_;
   } else if (a >= 2147483648.f32) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return max_limit_i32_;
   } else if (a < -2147483648.f32) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return min_limit_i32_;
   }
 
@@ -1192,7 +1203,7 @@ i32 FloppyFloat::F32ToI32(f32 a) {
 
   f32 r = static_cast<f32>(ia) - a;
   if (!IsZero(r))
-    inexact = true;
+    SetInexact();
 
   if constexpr (rm == kRoundTowardNegative) {
     if (r > 0.f32)
@@ -1231,13 +1242,13 @@ i64 FloppyFloat::F32ToI64(f32 a) {
 template <FloppyFloat::RoundingMode rm>
 i64 FloppyFloat::F32ToI64(f32 a) {
   if (IsNan(a)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return nan_limit_i64_;
   } else if (a >= 9223372036854775808.0f32) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return max_limit_i64_;
   } else if (a < -9223372036854775808.0f32) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return min_limit_i64_;
   }
 
@@ -1252,7 +1263,7 @@ i64 FloppyFloat::F32ToI64(f32 a) {
 
   f32 r = static_cast<f32>(ia) - a;
   if (!IsZero(r))
-    inexact = true;
+    SetInexact();
 
   if constexpr (rm == kRoundTowardNegative) {
     if (r > 0.f32)
@@ -1306,17 +1317,17 @@ u32 FloppyFloat::F32ToU32(f32 a) {
 template <FloppyFloat::RoundingMode rm>
 u32 FloppyFloat::F32ToU32(f32 a) {
   if (IsNan(a)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return nan_limit_u32_;
   } else if (a >= 4294967296.f32) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return max_limit_u32_;
   } else if (a < 0.f32) [[unlikely]] {
     if (ResultOutOfURange<f32, rm>(a)) {
-      invalid = true;
+      SetInvalid();
       return min_limit_u32_;
     }
-    inexact = true;
+    SetInexact();
     return std::numeric_limits<u32>::min();
   }
 
@@ -1331,7 +1342,7 @@ u32 FloppyFloat::F32ToU32(f32 a) {
 
   f32 r = static_cast<f32>(ia) - a;
   if (!IsZero(r))
-    inexact = true;
+    SetInexact();
 
   if constexpr (rm == kRoundTowardPositive) {
     if (r < 0.f32)
@@ -1367,17 +1378,17 @@ u64 FloppyFloat::F32ToU64(f32 a) {
 template <FloppyFloat::RoundingMode rm>
 u64 FloppyFloat::F32ToU64(f32 a) {
   if (IsNan(a)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return nan_limit_u64_;
   } else if (a >= 18446744073709551616.0f32) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return max_limit_u64_;
   } else if (a < 0.f) [[unlikely]] {
     if (ResultOutOfURange<f32, rm>(a)) {
-      invalid = true;
+      SetInvalid();
       return min_limit_u64_;
     }
-    inexact = true;
+    SetInexact();
     return std::numeric_limits<u64>::min();
   }
 
@@ -1385,7 +1396,7 @@ u64 FloppyFloat::F32ToU64(f32 a) {
 
   f32 r = static_cast<f32>(ia) - a;
   if (!IsZero(r))
-    inexact = true;
+    SetInexact();
 
   return RoundIntegerResult<f32, u64, rm>(r, a, ia);
 }
@@ -1399,7 +1410,7 @@ template u64 FloppyFloat::F32ToU64<FloppyFloat::kRoundTiesToAway>(f32 a);
 f64 FloppyFloat::F32ToF64(f32 a) {
   if (IsNan(a)) [[unlikely]] {
     if (!GetQuietBit(a))
-      invalid = true;
+      SetInvalid();
     return PropagateNan<f32, f64>(a);
   }
 
@@ -1431,7 +1442,7 @@ f16 FloppyFloat::F32ToF16(f32 a) {
 
   if (IsNan(a)) [[unlikely]] {
     if (!GetQuietBit(a))
-      invalid = true;
+      SetInvalid();
     return PropagateNan<f32, f16>(a);
   }
 
@@ -1439,8 +1450,8 @@ f16 FloppyFloat::F32ToF16(f32 a) {
 
   if (IsInfOrNan(result)) [[unlikely]] {  // Infinity case. NaN already handled before.
     if (!IsInf(a)) {
-      overflow = true;
-      inexact = true;
+      SetOverflow();
+      SetInexact();
       result = RoundInf<f16, rm>(result);
     }
     return result;
@@ -1448,7 +1459,7 @@ f16 FloppyFloat::F32ToF16(f32 a) {
 
   f32 residual = static_cast<f32>(result) - a;
   if (residual != 0.f32)
-    inexact = true;
+    SetInexact();
 
   result = RoundResult<f16, f32, rm>(residual, result);
 
@@ -1458,7 +1469,7 @@ f16 FloppyFloat::F32ToF16(f32 a) {
         result = SoftFloat::F32ToF16(a);
       } else {
         if (residual != 0.f32)
-          underflow = true;
+          SetUnderflow();
       }
     }
   }
@@ -1580,13 +1591,13 @@ template f32 FloppyFloat::F64ToF32<FloppyFloat::kRoundTiesToAway>(f64 a);
 template <FloppyFloat::RoundingMode rm>
 i32 FloppyFloat::F64ToI32(f64 a) {
   if (IsNan(a)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return nan_limit_i32_;
   } else if (a > F64ToI32PosLimit<rm>()) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return max_limit_i32_;
   } else if (a < F64ToI32NegLimit<rm>()) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return min_limit_i32_;
   }
 
@@ -1601,7 +1612,7 @@ i32 FloppyFloat::F64ToI32(f64 a) {
 
   f64 r = static_cast<f64>(ia) - a;
   if (!IsZero(r))
-    inexact = true;
+    SetInexact();
 
   if constexpr (rm == kRoundTowardNegative) {
     if (r > 0)
@@ -1640,13 +1651,13 @@ i64 FloppyFloat::F64ToI64(f64 a) {
 template <FloppyFloat::RoundingMode rm>
 i64 FloppyFloat::F64ToI64(f64 a) {
   if (IsNan(a)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return nan_limit_i64_;
   } else if (a >= 9223372036854775808.0f64) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return max_limit_i64_;
   } else if (a < -9223372036854775808.0f64) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return min_limit_i64_;
   }
 
@@ -1661,7 +1672,7 @@ i64 FloppyFloat::F64ToI64(f64 a) {
 
   f64 r = static_cast<f64>(ia) - a;
   if (!IsZero(r))
-    inexact = true;
+    SetInexact();
 
   if constexpr (rm == kRoundTowardNegative) {
     if (r > 0)
@@ -1730,21 +1741,21 @@ u32 FloppyFloat::F64ToU32(f64 a) {
 template <FloppyFloat::RoundingMode rm>
 u32 FloppyFloat::F64ToU32(f64 a) {
   if (IsNan(a)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return nan_limit_u32_;
   } else if (a > 4294967295.f64) [[unlikely]] {
     if (a > F64ToU32PosLimit<rm>()) {
-      invalid = true;
+      SetInvalid();
       return max_limit_u32_;
     }
-    inexact = true;
+    SetInexact();
     return std::numeric_limits<u32>::max();
   } else if (a < 0.f64) [[unlikely]] {
     if (a < F64ToU32NegLimit<rm>()) {
-      invalid = true;
+      SetInvalid();
       return min_limit_u32_;
     }
-    inexact = true;
+    SetInexact();
     return std::numeric_limits<u32>::min();
   }
 
@@ -1752,7 +1763,7 @@ u32 FloppyFloat::F64ToU32(f64 a) {
 
   f64 r = static_cast<f64>(ia) - a;
   if (!IsZero(r))
-    inexact = true;
+    SetInexact();
 
   return RoundIntegerResult<f64, u32, rm>(r, a, ia);
 }
@@ -1798,17 +1809,17 @@ u64 FloppyFloat::F64ToU64(f64 a) {
 template <FloppyFloat::RoundingMode rm>
 u64 FloppyFloat::F64ToU64(f64 a) {
   if (IsNan(a)) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return nan_limit_u64_;
   } else if (a > 18446744073709551616.f64) [[unlikely]] {
-    invalid = true;
+    SetInvalid();
     return max_limit_u64_;
   } else if (a < 0.f64) [[unlikely]] {
     if (a < F64ToU32NegLimit<rm>()) {
-      invalid = true;
+      SetInvalid();
       return min_limit_u64_;
     }
-    inexact = true;
+    SetInexact();
     return std::numeric_limits<u64>::min();
   }
 
@@ -1817,7 +1828,7 @@ u64 FloppyFloat::F64ToU64(f64 a) {
 
   f64 r = static_cast<f64>(ia) - a;
   if (!IsZero(r))
-    inexact = true;
+    SetInexact();
 
   return RoundIntegerResult<f64, u64, rm>(r, a, ia);
 }
@@ -1853,13 +1864,13 @@ f16 FloppyFloat::I32ToF16(i32 a) {
   u32 r = shifted_ua & 0x1fffffu;
 
   if (IsInf(af)) [[unlikely]] {
-    overflow = true;
-    inexact = true;
+    SetOverflow();
+    SetInexact();
     return RoundInf<f16, rm>(af);
   }
 
   if (r != 0) {
-    inexact = true;
+    SetInexact();
     [[maybe_unused]] bool even;
     if constexpr (rm != kRoundTiesToEven)
       even = shifted_ua & (1u << (32 - NumSignificandBits<f16>() -1 ));
@@ -1931,7 +1942,7 @@ f32 FloppyFloat::I32ToF32(i32 a) {
   u32 r = shifted_ua & 0xffu;
 
   if (r != 0) {
-    inexact = true;
+    SetInexact();
     if constexpr (rm == kRoundTiesToEven) {
       return af;
     }
@@ -2008,7 +2019,7 @@ f32 FloppyFloat::U32ToF32(u32 a) {
   u32 r = shifted_ua & (significand_last_bit - 1u);  // Get the last 32-24=8 bits.
 
   if (r != 0) {
-    inexact = true;
+    SetInexact();
     [[maybe_unused]] bool even;
     if constexpr (rm != kRoundTiesToEven)
       even = shifted_ua & 0x100u;
@@ -2063,7 +2074,7 @@ f32 FloppyFloat::U64ToF32(u64 a) {
   u64 r = shifted_ua & (significand_last_bit - 1ull);  // Get the last 64-24=40 bits.
 
   if (r != 0) {
-    inexact = true;
+    SetInexact();
     [[maybe_unused]] bool even;
     if constexpr (rm != kRoundTiesToEven)
       even = shifted_ua & significand_last_bit;

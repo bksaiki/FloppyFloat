@@ -201,13 +201,13 @@ void SimdFloat::VAdd(FT* pa, FT* pb, FT* dest, size_t len) {
 
     if (stdx::any_of(VIsInfOrNan(c))) [[unlikely]] {
       if (stdx::any_of(VIsInf(c) && !VIsInf(a) && !VIsInf(b))) {
-        overflow = true;
-        inexact = true;
+        SetOverflow();
+        SetInexact();
       }
       if (stdx::any_of(VIsNan(c) && VIsInf(a) && VIsInf(b)))
-        invalid = true;
+        SetInvalid();
       if (stdx::any_of(VIsSnan(a) || VIsSnan(b)))
-        invalid = true;
+        SetInvalid();
       stdx::where(c != c, c) = VGetQnan<FT>();
     }
     if (!inexact) [[unlikely]] {
@@ -215,7 +215,7 @@ void SimdFloat::VAdd(FT* pa, FT* pb, FT* dest, size_t len) {
       // qNaN, and no inexact flag is set.
       auto r = VFastTwoSum<fvec<FT>>(a, b, c);
       if (stdx::any_of(VIsNonZero(r)))
-        inexact = true;
+        SetInexact();
     }
     c.copy_to(&dest[ind], stdx::element_aligned);
     ind += fvec<FT>::size();
@@ -246,13 +246,13 @@ void SimdFloat::VSub(FT* pa, FT* pb, FT* dest, size_t len) {
     c = a - b;
     if (stdx::any_of(VIsInfOrNan(c))) [[unlikely]] {
       if (stdx::any_of(VIsInf(c) && !VIsInf(a) && !VIsInf(b))) {
-        overflow = true;
-        inexact = true;
+        SetOverflow();
+        SetInexact();
       }
       if (stdx::any_of(VIsNan(c) && VIsInf(a) && VIsInf(b)))
-        invalid = true;
+        SetInvalid();
       if (stdx::any_of(VIsSnan(a) || VIsSnan(b)))
-        invalid = true;
+        SetInvalid();
       stdx::where(c != c, c) = VGetQnan<FT>();
     }
     if (!inexact) [[unlikely]] {
@@ -260,7 +260,7 @@ void SimdFloat::VSub(FT* pa, FT* pb, FT* dest, size_t len) {
       // qNaN, and no inexact flag is set.
       auto r = VTwoSum<fvec<FT>>(a, -b, c);
       if (stdx::any_of(VIsNonZero(r)))
-        inexact = true;
+        SetInexact();
     }
     c.copy_to(&dest[ind], stdx::element_aligned);
     ind += fvec<FT>::size();
@@ -291,15 +291,15 @@ void SimdFloat::VMul(FT* pa, FT* pb, FT* dest, size_t len) {
     c = a * b;
     if (stdx::any_of(VIsInfOrNan(c))) [[unlikely]] {
       if (stdx::any_of(VIsInf(c) && !VIsInf(a) && !VIsInf(b))) {
-        overflow = true;
-        inexact = true;
+        SetOverflow();
+        SetInexact();
       }
       if (stdx::any_of(VIsSnan(a) || VIsSnan(b)))
-        invalid = true;
+        SetInvalid();
       if (stdx::any_of(VIsZero(a) && VIsInf(b)))
-        invalid = true;
+        SetInvalid();
       if (stdx::any_of(VIsInf(a) && VIsZero(b)))
-        invalid = true;
+        SetInvalid();
       stdx::where(c != c, c) = VGetQnan<FT>();
     }
 
@@ -308,7 +308,7 @@ void SimdFloat::VMul(FT* pa, FT* pb, FT* dest, size_t len) {
     if (!inexact) [[unlikely]] {
       auto r = VUpMul(a, b, c);
       if (stdx::any_of(VIsNonZero(r)))
-        inexact = true;
+        SetInexact();
     }
     if (!underflow) {
       auto is_small = c < VGetMin<FT>() && c > -VGetMin<FT>();
@@ -316,7 +316,7 @@ void SimdFloat::VMul(FT* pa, FT* pb, FT* dest, size_t len) {
         auto r = VUpMul(a, b, c);
         auto tmp = stdx::__proposed::static_simd_cast<stdx::rebind_simd_t<f64, decltype(is_small)>>(is_small);
         if (stdx::any_of(VIsNonZero(r) && tmp))
-          underflow = true;
+          SetUnderflow();
       }
     }
     c.copy_to(&dest[ind], stdx::element_aligned);
@@ -348,13 +348,13 @@ void SimdFloat::VDiv(FT* pa, FT* pb, FT* dest, size_t len) {
     c = a / b;
     if (stdx::any_of(VIsInfOrNan(c))) [[unlikely]] {
       if (stdx::any_of(VIsInf(c) && !VIsInf(a) && VIsZero(b)))
-        division_by_zero = true;
+        SetDivisionByZero();
       if (stdx::any_of(VIsInf(c) && !VIsInf(a) && !VIsInf(b) && !VIsZero(b))) {
-        overflow = true;
-        inexact = true;
+        SetOverflow();
+        SetInexact();
       }
       if (stdx::any_of(VIsSnan(a) || VIsSnan(b)))
-        invalid = true;
+        SetInvalid();
       stdx::where(c != c, c) = VGetQnan<FT>();
     }
 
@@ -397,7 +397,7 @@ void SimdFloat::VSqrt(FT* pa, FT* dest, size_t len) {
     b = vsqrt(a);
     if (stdx::any_of(VIsNan(b))) [[unlikely]] {
       if (stdx::any_of(VIsSnan(a)) || stdx::any_of(a < 0))
-        invalid = true;
+        SetInvalid();
       stdx::where(b != b, b) = VGetQnan<FT>();
     }
 
@@ -432,13 +432,13 @@ void SimdFloat::VFma(FT* pa, FT* pb, FT* pc, FT* dest, size_t len) {
     d = vfma(a, b, c);
     if (unlikely(stdx::any_of(VIsInfOrNan(d)))) {
       if (stdx::any_of(VIsInf(d) && !VIsInf(a) && !VIsInf(b) && !VIsInf(c))) {
-        overflow = true;
-        inexact = true;
+        SetOverflow();
+        SetInexact();
       }
       if (stdx::any_of(VIsSnan(a) || VIsSnan(b) || VIsSnan(c)))
-        invalid = true;
+        SetInvalid();
       if (stdx::any_of((VIsNan(d) && !VIsNan(a)) && !VIsNan(b) && !VIsNan(c)))
-        invalid = true;
+        SetInvalid();
       stdx::where(d != d, d) = VGetQnan<FT>();
     }
 

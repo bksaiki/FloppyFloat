@@ -121,12 +121,12 @@ constexpr FT SoftFloat::RoundPack(bool a_sign, i32 a_exp, UT a_mant) {
     a_mant = RshiftRnd<UT>(a_mant, 1 - a_exp);
     rnd_bits = a_mant & RoundMask<FT>();
     if (subnormal && rnd_bits)
-      underflow = true;
+      SetUnderflow();
     a_exp = 1;
   }
 
   if (rnd_bits)
-    inexact = true;
+    SetInexact();
 
   a_mant = (a_mant + addend) >> NumRoundBits<FT>();
   if (rounding_mode == kRoundTiesToEven && rnd_bits == 1 << (NumRoundBits<FT>() - 1))
@@ -138,8 +138,8 @@ constexpr FT SoftFloat::RoundPack(bool a_sign, i32 a_exp, UT a_mant) {
   } else if (a_exp >= (i32)MaxExponent<FT>()) {
     a_exp = addend ? MaxExponent<FT>() : MaxExponent<FT>() - 1;
     a_mant = addend ? 0 : MaxSignificand<FT>();
-    overflow = true;
-    inexact = true;
+    SetOverflow();
+    SetInexact();
   }
 
   return FloatFrom3Tuple<FT>(a_sign, a_exp, a_mant);
@@ -151,7 +151,7 @@ FT SoftFloat::Add(FT a, FT b) {
 
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     return PropagateNan<FT>(a, b);
   }
 
@@ -167,7 +167,7 @@ FT SoftFloat::Add(FT a, FT b) {
 
   if (a_exp == MaxExponent<FT>()) [[unlikely]] {
     if ((b_exp == MaxExponent<FT>()) && (a_sign != b_sign)) {  // Infinity case.
-      invalid = true;
+      SetInvalid();
       return GetQnan<FT>();
     }
 
@@ -208,7 +208,7 @@ FT SoftFloat::Sub(FT a, FT b) {
 
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     return PropagateNan<FT>(a, b);
   }
 
@@ -228,10 +228,10 @@ FT SoftFloat::Sub(FT a, FT b) {
   if (a_exp == MaxExponent<FT>()) [[unlikely]] {
     if (a_mant != 0) {  // NaN case.
       if (!IsQnan(a) || IsSnan(b))
-        invalid = true;
+        SetInvalid();
       return GetQnan<FT>();
     } else if ((b_exp == MaxExponent<FT>()) && (a_sign != b_sign)) {  // Infinity case.
-      invalid = true;
+      SetInvalid();
       return GetQnan<FT>();
     }
 
@@ -272,7 +272,7 @@ inline FT SoftFloat::Mul(FT a, FT b) {
 
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     return PropagateNan<FT>(a, b);
   }
 
@@ -287,12 +287,12 @@ inline FT SoftFloat::Mul(FT a, FT b) {
   if (a_exp == MaxExponent<FT>() || b_exp == MaxExponent<FT>()) {
     if (IsNan(a) || IsNan(b)) {
       if (IsSnan(a) || IsSnan(b))
-        invalid = true;
+        SetInvalid();
       return GetQnan<FT>();  // TODO nan prop
     } else {
       if ((a_exp == MaxExponent<FT>() && (b_exp == 0 && b_mant == 0)) ||
           (b_exp == MaxExponent<FT>() && (a_exp == 0 && a_mant == 0))) {
-        invalid = true;
+        SetInvalid();
         return GetQnan<FT>();  // TODO nan prop
       } else {
         return FloatFrom3Tuple<FT>(r_sign, MaxExponent<FT>(), 0u);
@@ -334,7 +334,7 @@ FT SoftFloat::Div(FT a, FT b) {
 
   if (IsNan(a) || IsNan(b)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b))
-      invalid = true;
+      SetInvalid();
     return PropagateNan<FT>(a, b);
   }
 
@@ -349,10 +349,10 @@ FT SoftFloat::Div(FT a, FT b) {
   if (a_exp == MaxExponent<FT>()) {
     if (a_mant != 0 || IsNan(b)) {
       if (IsSnan(a) || IsSnan(b))
-        invalid = true;
+        SetInvalid();
       return GetQnan<FT>();
     } else if (b_exp == MaxExponent<FT>()) {
-      invalid = true;
+      SetInvalid();
       return GetQnan<FT>();
     } else {
       return FloatFrom3Tuple<FT>(r_sign, MaxExponent<FT>(), 0);
@@ -360,7 +360,7 @@ FT SoftFloat::Div(FT a, FT b) {
   } else if (b_exp == MaxExponent<FT>()) {
     if (b_mant != 0) {
       if (IsSnan(a) || IsSnan(b))
-        invalid = true;
+        SetInvalid();
       return GetQnan<FT>();
     } else {
       return FloatFrom3Tuple<FT>(r_sign, 0, 0u);
@@ -370,10 +370,10 @@ FT SoftFloat::Div(FT a, FT b) {
   if (b_exp == 0) {
     if (b_mant == 0) {
       if (a_exp == 0 && a_mant == 0) {
-        invalid = true;
+        SetInvalid();
         return GetQnan<FT>();
       } else {
-        division_by_zero = true;
+        SetDivisionByZero();
         return FloatFrom3Tuple<FT>(r_sign, MaxExponent<FT>(), 0u);
       }
     }
@@ -408,7 +408,7 @@ FT SoftFloat::Sqrt(FT a) {
 
   if (IsNan(a)) [[unlikely]] {
     if (IsSnan(a))
-      invalid = true;
+      SetInvalid();
     return PropagateNan<FT>(a, a);
   }
 
@@ -419,10 +419,10 @@ FT SoftFloat::Sqrt(FT a) {
   if (a_exp == MaxExponent<FT>()) {
     if (a_mant != 0) {
       if (IsSnan(a))
-        invalid = true;
+        SetInvalid();
       return GetQnan<FT>();
     } else if (a_sign) {
-      invalid = true;
+      SetInvalid();
       return GetQnan<FT>();
     } else {
       return a;
@@ -433,7 +433,7 @@ FT SoftFloat::Sqrt(FT a) {
     if (a_exp == 0 && a_mant == 0)
       return a;  // -zero
 
-    invalid = true;
+    SetInvalid();
     return GetQnan<FT>();
   }
 
@@ -470,9 +470,10 @@ FT SoftFloat::Fma(FT a, FT b, FT c) {
 
   if (IsNan(a) || IsNan(b) || IsNan(c)) [[unlikely]] {
     if (IsSnan(a) || IsSnan(b) || IsSnan(c))
-      invalid = true;
+      SetInvalid();
     if (IsNan(c) && ((IsZero(a) && IsInf(b)) || (IsZero(b) && IsInf(a))))
-        invalid = invalid_fma ? true : invalid;
+      if (invalid_fma)
+        SetInvalid();
     return PropagateNan<FT>(a, b, c);
   }
 
@@ -491,7 +492,7 @@ FT SoftFloat::Fma(FT a, FT b, FT c) {
     if ((a_exp == MaxExponent<FT>() && (b_exp == 0 && b_mant == 0)) ||
         (b_exp == MaxExponent<FT>() && (a_exp == 0 && a_mant == 0)) ||
         ((a_exp == MaxExponent<FT>() || b_exp == MaxExponent<FT>()) && (c_exp == MaxExponent<FT>() && r_sign != c_sign))) {
-      invalid = true;
+      SetInvalid();
       return GetQnan<FT>();
     } else if (c_exp == MaxExponent<FT>()) {
       return FloatFrom3Tuple<FT>(c_sign, MaxExponent<FT>(), 0);
@@ -667,7 +668,7 @@ TTO SoftFloat::FToF(TFROM a) {
   if (a_exp == MaxExponent<TFROM>()) {
     if (a_mant != 0) {
       if (!GetQuietBit<TFROM>(a))
-        invalid = true;
+        SetInvalid();
       return PropagateNan<TFROM, TTO>(a);
     }
 
@@ -703,12 +704,12 @@ TTO SoftFloat::FToI(TFROM a) {
   UTFROM a_mant = GetSignificand(a);
 
   if (IsNan(a)) {
-    invalid = true;
+    SetInvalid();
     return NanLimit<TTO>();
   }
 
   if (IsInf(a)) {
-    invalid = true;
+    SetInvalid();
     return a_sign ? MinLimit<TTO>() : MaxLimit<TTO>();
   }
 
@@ -728,13 +729,13 @@ TTO SoftFloat::FToI(TFROM a) {
 
   if (a_exp >= 0) {
     if (a_exp > (i32)(NumBits<TTO>() - 1 - NumSignificandBits<TFROM>())) {
-      invalid = true;
+      SetInvalid();
       return a_sign ? MinLimit<TTO>() : MaxLimit<TTO>();
     }
 
     r = (UTTO)(a_mant >> NumRoundBits<TFROM>()) << a_exp;
     if (r > r_max) {
-      invalid = true;
+      SetInvalid();
       return a_sign ? MinLimit<TTO>() : MaxLimit<TTO>();
     }
 
@@ -768,13 +769,13 @@ TTO SoftFloat::FToI(TFROM a) {
       a_mant &= ~1;
 
     if (a_mant > r_max) {
-      invalid = true;
+      SetInvalid();
       return a_sign ? MinLimit<TTO>() : MaxLimit<TTO>();
     }
 
     r = a_mant;
     if (rnd_bits)
-      inexact = true;
+      SetInexact();
   }
 
   if (a_sign)

@@ -109,6 +109,14 @@ Vfpu::Vfpu() {
   rounding_mode = kRoundTiesToEven;
 }
 
+u8 Vfpu::GetFlagsRiscv() {
+  return (invalid << 4) | (division_by_zero << 3) | (overflow << 2) | (underflow << 1) | inexact;
+}
+
+u8 Vfpu::GetFlagsX86() {
+  return (inexact << 4) | (underflow << 4) | (overflow << 3) | (division_by_zero << 2) | (0 << 1) | invalid;
+}
+
 void Vfpu::ClearFlags() {
   invalid = false;
   division_by_zero = false;

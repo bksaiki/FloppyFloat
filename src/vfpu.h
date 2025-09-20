@@ -50,7 +50,12 @@ class Vfpu {
 
   Vfpu();
 
+  FfUtils::u8 GetFlagsRiscv();
+  FfUtils::u8 GetFlagsX86();
+
   void ClearFlags();
+
+  bool flags_dirty;
 
   template <typename FT>
   void SetQnan(typename FfUtils::FloatToUint<FT>::type val);
@@ -72,6 +77,31 @@ class Vfpu {
   T MinLimit();
   template <typename T>
   T NanLimit();
+
+  constexpr void SetInexact() {
+    flags_dirty = (inexact == false);
+    inexact = true;
+  }
+
+  constexpr  void SetInvalid() {
+    flags_dirty = (invalid == false);
+    invalid = true;
+  }
+
+  constexpr  void SetOverflow() {
+    flags_dirty = (overflow == false);
+    overflow = true;
+  }
+
+  constexpr  void SetUnderflow() {
+    flags_dirty = (underflow == false);
+    underflow = true;
+  }
+
+  constexpr void SetDivisionByZero() {
+    flags_dirty = (division_by_zero == false);
+    division_by_zero = true;
+  }
 
   FfUtils::i32 nan_limit_i32_;
   FfUtils::i32 max_limit_i32_;
